@@ -1,6 +1,7 @@
 package com.binaryon.employeemanagement.service.impl;
 
 import com.binaryon.employeemanagement.entity.Employee;
+import com.binaryon.employeemanagement.exception.ResourceNotFoundException;
 import com.binaryon.employeemanagement.repository.EmployeeRepository;
 import com.binaryon.employeemanagement.service.EmployeeService;
 import org.springframework.stereotype.Service;
@@ -24,7 +25,8 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     @Override
     public Optional<Employee> findById(Long id) {
-        return employeeRepository.findById(id);
+        return Optional.ofNullable(employeeRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Employee not exist with id: " + id)));
     }
 
     @Override
@@ -33,12 +35,21 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
 
     @Override
-    public Employee updateEmployee(Employee employee) {
+    public Employee updateEmployee(Long id, Employee employeeData) {
+        Employee employee = employeeRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Employee not exist with id: " + id));
+
+        employee.setFirstName(employeeData.getFirstName());
+        employee.setLastName(employeeData.getLastName());
+        employee.setEmail(employeeData.getEmail());
+
         return employeeRepository.save(employee);
     }
 
     @Override
     public void deleteEmployeeById(Long id) {
-        employeeRepository.deleteById(id);
+        Employee employee = employeeRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Employee not exist with id: " + id));
+        employeeRepository.delete(employee);
     }
 }
