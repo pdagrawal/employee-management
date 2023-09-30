@@ -3,10 +3,16 @@ package com.binaryon.employeemanagement.controller;
 import com.binaryon.employeemanagement.entity.Employee;
 import com.binaryon.employeemanagement.service.EmployeeService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.hateoas.CollectionModel;
+import org.springframework.hateoas.EntityModel;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
+
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @RestController
 @RequestMapping("/employees")
@@ -20,13 +26,22 @@ public class EmployeeController {
     }
 
     @GetMapping
-    public List<Employee> getAllEmployees() {
-        return employeeService.findAllEmployees();
+    public CollectionModel<EntityModel<Employee>> all() {
+        List<EntityModel<Employee>> employees = employeeService.findAllEmployees().stream()
+                .map(employee -> EntityModel.of(employee,
+                        linkTo(methodOn(EmployeeController.class).one(employee.getId())).withSelfRel(),
+                        linkTo(methodOn(EmployeeController.class).all()).withRel("employees")))
+                .collect(Collectors.toList());
+        return CollectionModel.of(employees, linkTo(methodOn(EmployeeController.class).all()).withSelfRel());
     }
 
     @GetMapping("/{id}")
-    public Optional<Employee> findEmployeeById(@PathVariable("id") Long id) {
-        return employeeService.findById(id);
+    public EntityModel<Optional<Employee>> one(@PathVariable("id") Long id) {
+        Optional<Employee> employee = employeeService.findById(id);
+
+        return EntityModel.of(employee,
+                linkTo(methodOn(EmployeeController.class).one(id)).withSelfRel(),
+                linkTo(methodOn(EmployeeController.class).all()).withRel("employees"));
     }
 
     @PostMapping
