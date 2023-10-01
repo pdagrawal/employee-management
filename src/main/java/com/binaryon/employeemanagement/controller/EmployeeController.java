@@ -1,10 +1,14 @@
 package com.binaryon.employeemanagement.controller;
 
+import com.binaryon.employeemanagement.assembler.EmployeeModelAssembler;
 import com.binaryon.employeemanagement.entity.Employee;
+import com.binaryon.employeemanagement.exception.ResourceNotFoundException;
 import com.binaryon.employeemanagement.service.EmployeeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.IanaLinkRelations;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,41 +25,47 @@ public class EmployeeController {
     @Autowired
     private final EmployeeService employeeService;
 
-    public EmployeeController(EmployeeService employeeService) {
+    private final EmployeeModelAssembler assembler;
+
+    public EmployeeController(EmployeeService employeeService, EmployeeModelAssembler assembler) {
         this.employeeService = employeeService;
+        this.assembler = assembler;
     }
 
     @GetMapping
     public CollectionModel<EntityModel<Employee>> all() {
         List<EntityModel<Employee>> employees = employeeService.findAllEmployees().stream()
-                .map(employee -> EntityModel.of(employee,
-                        linkTo(methodOn(EmployeeController.class).one(employee.getId())).withSelfRel(),
-                        linkTo(methodOn(EmployeeController.class).all()).withRel("employees")))
+                .map(assembler::toModel)
                 .collect(Collectors.toList());
+
         return CollectionModel.of(employees, linkTo(methodOn(EmployeeController.class).all()).withSelfRel());
     }
 
     @GetMapping("/{id}")
-    public EntityModel<Optional<Employee>> one(@PathVariable("id") Long id) {
-        Optional<Employee> employee = employeeService.findById(id);
+    public EntityModel<Employee> one(@PathVariable("id") Long id) {
+        Employee employee = employeeService.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Employee", id));
 
-        return EntityModel.of(employee,
-                linkTo(methodOn(EmployeeController.class).one(id)).withSelfRel(),
-                linkTo(methodOn(EmployeeController.class).all()).withRel("employees"));
+        return assembler.toModel(employee);
     }
 
     @PostMapping
-    public Employee saveEmployee(@RequestBody Employee employee) {
-        return employeeService.saveEmployee(employee);
+    ResponseEntity<?> newEmployee(@RequestBody Employee employee) {
+        EntityModel<Employee> entityModel = assembler.toModel(employeeService.saveEmployee(employee));
+
+        return ResponseEntity
+                .created(entityModel.getRequiredLink(IanaLinkRelations.SELF).toUri())
+                .body(entityModel);
     }
 
     @PutMapping("/{id}")
-    public Employee updateEmployee(@PathVariable("id") Long id, @RequestBody Employee employee) {
-        return employeeService.updateEmployee(id, employee);
+    EntityModel<Employee> updateEmployee(@PathVariable("id") Long id, @RequestBody Employee employee) {
+        return assembler.toModel(employeeService.updateEmployee(id, employee));
     }
 
     @DeleteMapping("/{id}")
-    public void deleteEmployee(@PathVariable("id") Long id) {
+    ResponseEntity<?> deleteEmployee(@PathVariable("id") Long id) {
         employeeService.deleteEmployeeById(id);
+        return ResponseEntity.noContent().build();
     }
 }

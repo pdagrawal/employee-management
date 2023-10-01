@@ -25,8 +25,7 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     @Override
     public Optional<Employee> findById(Long id) {
-        return Optional.ofNullable(employeeRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Employee not exist with id: " + id)));
+        return employeeRepository.findById(id);
     }
 
     @Override
@@ -37,7 +36,7 @@ public class EmployeeServiceImpl implements EmployeeService {
     @Override
     public Employee updateEmployee(Long id, Employee employeeData) {
         Employee employee = employeeRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Employee not exist with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Employee", id));
 
         employee.setFirstName(employeeData.getFirstName());
         employee.setLastName(employeeData.getLastName());
@@ -49,7 +48,7 @@ public class EmployeeServiceImpl implements EmployeeService {
     @Override
     public void deleteEmployeeById(Long id) {
         Employee employee = employeeRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Employee not exist with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Employee", id));
         employeeRepository.delete(employee);
     }
 }
