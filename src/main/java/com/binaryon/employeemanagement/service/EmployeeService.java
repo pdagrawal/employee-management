@@ -7,7 +7,7 @@ import java.util.Optional;
 
 public interface EmployeeService {
     List<Employee> findAllEmployees();
-    Optional<Employee> findById(Long id);
+    Employee findById(Long id);
     Employee saveEmployee(Employee employee);
     Employee updateEmployee(Long id, Employee employee);
     void deleteEmployeeById(Long id);

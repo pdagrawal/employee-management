@@ -12,7 +12,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
@@ -43,10 +42,7 @@ public class EmployeeController {
 
     @GetMapping("/{id}")
     public EntityModel<Employee> one(@PathVariable("id") Long id) {
-        Employee employee = employeeService.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Employee", id));
-
-        return assembler.toModel(employee);
+        return assembler.toModel(employeeService.findById(id));
     }
 
     @PostMapping
